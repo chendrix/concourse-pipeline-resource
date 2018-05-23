@@ -8,7 +8,6 @@ Use this resource by adding the following to
 the `resource_types` section of a pipeline config:
 
 ```yaml
----
 resource_types:
 - name: concourse-pipeline
   type: docker-image
@@ -24,7 +23,6 @@ on adding `resource_types` to a pipeline config.
 Check returns the versions of all pipelines. Configure as follows:
 
 ```yaml
----
 resources:
 - name: my-pipelines
   type: concourse-pipeline
@@ -69,7 +67,6 @@ and `team-2` respectively, the config for the first will be written to
 `team-1-foo.yml` and the second to `team-2-bar.yml`.
 
 ```yaml
----
 resources:
 - name: my-pipelines
   type: concourse-pipeline
@@ -94,7 +91,6 @@ One of either static or dynamic configuration must be provided; using both is no
 ### static
 
 ```yaml
----
 resources:
 - name: my-pipelines
   type: concourse-pipeline
@@ -142,7 +138,6 @@ Must be non-nil and non-empty. The structure of the `pipeline` object is as foll
 Resource configuration as above for Check, with the following job configuration:
 
 ```yaml
----
 jobs:
 - name: set-my-pipelines
   plan:
@@ -166,44 +161,38 @@ jobs:
 
 ### Dependencies
 
-Dependencies are vendored in the `vendor` directory, according to the
-[golang 1.5 vendor experiment](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwi7puWg7ZrLAhUN1WMKHeT4A7oQFggdMAA&url=https%3A%2F%2Fgolang.org%2Fs%2Fgo15vendor&usg=AFQjCNEPCAjj1lnni5apHdA7rW0crWs7Zw).
-
+Dependencies are vendored in the `Gopkg.lock` file by [dep](https://github.com/golang/dep).
 #### Updating dependencies
 
-Install [gvt](https://github.com/FiloSottile/gvt) and make sure it is available
-in your $PATH, e.g.:
-
-```
-go get -u github.com/FiloSottile/gvt
+```bash
+$ dep ensure
 ```
 
 To add a new dependency:
-```
-gvt fetch
+```bash
+$ dep ensure -add <import_path>
 ```
 
-To update an existing dependency to a specific version:
+To update an existing dependency:
 
-```
-gvt delete <import_path>
-gvt fetch -revision <revision_number> <import_path>
+```bash
+$ dep ensure -update <import path>
 ```
 
 ### Running the tests
 
 Install the ginkgo executable with:
 
-```
-go get -u github.com/onsi/ginkgo/ginkgo
+```bash
+$ go get -u github.com/onsi/ginkgo/ginkgo
 ```
 
 The tests require a running Concourse configured with basic auth to test against.
 
 Run the tests with the following command (optionally also setting `INSECURE=true`):
 
-```
-FLY_LOCATION=path/to/fly \
+```bash
+$ FLY_LOCATION=path/to/fly \
 TARGET=https://my-concourse.com \
 USERNAME=my-basic-auth-user \
 PASSWORD=my-basic-auth-password \
@@ -219,8 +208,8 @@ will stop the build.
 
 Run the tests with the following command:
 
-```sh
-docker build -t concourse-pipeline-resource .
+```bash
+$ docker build -t concourse-pipeline-resource .
 ```
 
 ### Contributing
