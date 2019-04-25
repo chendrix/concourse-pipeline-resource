@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 
 	"github.com/concourse/concourse-pipeline-resource/concourse"
@@ -67,16 +68,28 @@ func (c *Command) Run(input concourse.InRequest) (concourse.InResponse, error) {
 
 		c.logger.Debugf("Login successful\n")
 
-		pipelines, err := c.flyCommand.Pipelines()
-		if err != nil {
-			return concourse.InResponse{}, err
+		var pipelines []string
+		if team.Pipelines == nil {
+			pipelines, err = c.flyCommand.Pipelines()
+			if err != nil {
+				return concourse.InResponse{}, err
+			}
+			c.logger.Debugf("Found pipelines (%s): %+v\n", teamName, pipelines)
+		} else {
+			pipelines = team.Pipelines
+			c.logger.Debugf("Using configured pipelines (%s): %+v\n", teamName, pipelines)
 		}
-		c.logger.Debugf("Found pipelines (%s): %+v\n", teamName, pipelines)
 
 		for _, pipelineName := range pipelines {
 			outContents, err := c.flyCommand.GetPipeline(pipelineName)
 			if err != nil {
-				return concourse.InResponse{}, err
+				match, _ := regexp.MatchString("pipeline not found", err.Error())
+				if match {
+					c.logger.Debugf("Pipeline %s not already present, skipping.\n", pipelineName)
+					continue
+				} else {
+					return concourse.InResponse{}, err
+				}
 			}
 			pipelineContentsFilepath := filepath.Join(
 				c.downloadDir,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 
 	"github.com/concourse/concourse-pipeline-resource/concourse"
@@ -85,24 +86,36 @@ func (c *Command) Run(input concourse.CheckRequest) (concourse.CheckResponse, er
 
 		c.logger.Debugf("Login successful\n")
 
-		pipelines, err := c.flyCommand.Pipelines()
-		if err != nil {
-			return concourse.CheckResponse{}, err
+		var pipelines []string
+		if team.Pipelines == nil {
+			pipelines, err = c.flyCommand.Pipelines()
+			if err != nil {
+				return concourse.CheckResponse{}, err
+			}
+			c.logger.Debugf("Found pipelines (%s): %+v\n", teamName, pipelines)
+		} else {
+			pipelines = team.Pipelines
+			c.logger.Debugf("Using configured pipelines (%s): %+v\n", teamName, pipelines)
 		}
-		c.logger.Debugf("Found pipelines (%s): %+v\n", teamName, pipelines)
 
 		for _, pipelineName := range pipelines {
 			c.logger.Debugf("Getting pipeline: %s\n", pipelineName)
 			outBytes, err := c.flyCommand.GetPipeline(pipelineName)
 			if err != nil {
-				return concourse.CheckResponse{}, err
+				match, _ := regexp.MatchString("pipeline not found", err.Error())
+				if match {
+					c.logger.Debugf("Pipeline %s not already present, skipping.\n", pipelineName)
+					continue
+				} else {
+					return concourse.CheckResponse{}, err
+				}
 			}
 
 			version := fmt.Sprintf(
 				"%x",
 				md5.Sum(outBytes),
 			)
-			pipelineVersions[pipelineName] = version
+			pipelineVersions[fmt.Sprintf("%s:%s", team.Username, pipelineName)] = version
 		}
 	}
 

@@ -51,6 +51,12 @@ var _ = Describe("In", func() {
 				Username: "some user",
 				Password: "some password",
 			},
+			{
+				Name:      "another team",
+				Username:  "another user",
+				Password:  "another password",
+				Pipelines: []string{"pipeline-2"},
+			},
 		}
 
 		pipelinesErr = nil
@@ -115,16 +121,23 @@ pipeline2: foo
 		files, err := ioutil.ReadDir(downloadDir)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(files).To(HaveLen(len(pipelines)))
-		Expect(files[0].Name()).To(MatchRegexp("%s.yml", pipelines[0]))
+		Expect(files).To(HaveLen(len(pipelines) + len(teams[1].Pipelines)))
+
+		Expect(files[0].Name()).To(MatchRegexp("%s-%s.yml", teams[1].Name, pipelines[1]))
 
 		contents, err := ioutil.ReadFile(filepath.Join(downloadDir, files[0].Name()))
 		Expect(err).NotTo(HaveOccurred())
-		Expect(string(contents)).To(Equal(pipelineContents[0]))
+		Expect(string(contents)).To(Equal(pipelineContents[1]))
 
-		Expect(files[1].Name()).To(MatchRegexp("%s.yml", pipelines[1]))
+		Expect(files[1].Name()).To(MatchRegexp("%s.yml", pipelines[0]))
 
 		contents, err = ioutil.ReadFile(filepath.Join(downloadDir, files[1].Name()))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(string(contents)).To(Equal(pipelineContents[0]))
+
+		Expect(files[2].Name()).To(MatchRegexp("%s.yml", pipelines[1]))
+
+		contents, err = ioutil.ReadFile(filepath.Join(downloadDir, files[2].Name()))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(contents)).To(Equal(pipelineContents[1]))
 	})
@@ -154,7 +167,7 @@ pipeline2: foo
 			_, err := command.Run(inRequest)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeFlyCommand.LoginCallCount()).To(Equal(1))
+			Expect(fakeFlyCommand.LoginCallCount()).To(Equal(2))
 			_, _, _, _, insecure := fakeFlyCommand.LoginArgsForCall(0)
 
 			Expect(insecure).To(BeTrue())
@@ -200,6 +213,17 @@ pipeline2: foo
 			Expect(err).To(HaveOccurred())
 
 			Expect(err).To(Equal(pipelinesErr))
+		})
+	})
+
+	Context("when getting a non existing pipeline", func() {
+		BeforeEach(func() {
+			fakeFlyCommand.GetPipelineReturns(nil, fmt.Errorf("error: pipeline not found"))
+		})
+
+		It("catches the error", func() {
+			_, err := command.Run(inRequest)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 

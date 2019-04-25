@@ -38,6 +38,9 @@ resources:
     - name: team-2
       username: other-user
       password: other-password
+      pipelines:
+      - pipeline 1
+      - pipeline 2
 ```
 
 * `target`: *Optional.* URL of your concourse instance e.g. `https://my-concourse.com`.
@@ -58,6 +61,15 @@ resources:
 
   * `password`: Basic auth password for logging in to the team.
     If this and `username` are blank, team must have no authentication configured.
+
+  * `pipelines`: *Optional.* Define a list of pipelines associated to the team.
+    It affects both `check` and `in`. The `check` will only watch the pipelines
+    defined for the team. The `in` will only save to file the pipelines specified.
+    In both case if a pipeline is specified but not found, it will be skipped without
+    error, to accomodate the case where a pipeline still needs to be deployed by the
+    `out` step.
+    If not specified all the existing pipelines of the team will be considered.
+    This setting is independent of the pipelines specified in `out`.
 
 ## `in`: Get the configuration of the pipelines
 

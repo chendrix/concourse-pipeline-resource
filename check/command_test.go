@@ -81,6 +81,12 @@ pipeline2: foo
 				Username: "some user",
 				Password: "some password",
 			},
+			{
+				Name:      "another team",
+				Username:  "another user",
+				Password:  "another password",
+				Pipelines: []string{"pipeline 2"},
+			},
 		}
 
 		checkRequest = concourse.CheckRequest{
@@ -97,8 +103,9 @@ pipeline2: foo
 
 		expectedResponse = []concourse.Version{
 			{
-				pipelines[0]: fmt.Sprintf("%x", md5.Sum([]byte(pipelineContents[0]))),
-				pipelines[1]: fmt.Sprintf("%x", md5.Sum([]byte(pipelineContents[1]))),
+				fmt.Sprintf("%s:%s", teams[0].Username, pipelines[0]): fmt.Sprintf("%x", md5.Sum([]byte(pipelineContents[0]))),
+				fmt.Sprintf("%s:%s", teams[0].Username, pipelines[1]): fmt.Sprintf("%x", md5.Sum([]byte(pipelineContents[1]))),
+				fmt.Sprintf("%s:%s", teams[1].Username, pipelines[1]): fmt.Sprintf("%x", md5.Sum([]byte(pipelineContents[1]))),
 			},
 		}
 
@@ -195,7 +202,7 @@ pipeline2: foo
 			_, err := command.Run(checkRequest)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeFlyCommand.LoginCallCount()).To(Equal(1))
+			Expect(fakeFlyCommand.LoginCallCount()).To(Equal(2))
 			_, _, _, _, insecure := fakeFlyCommand.LoginArgsForCall(0)
 
 			Expect(insecure).To(BeTrue())
@@ -241,6 +248,17 @@ pipeline2: foo
 			Expect(err).To(HaveOccurred())
 
 			Expect(err).To(Equal(pipelinesErr))
+		})
+	})
+
+	Context("when getting a non existing pipeline", func() {
+		BeforeEach(func() {
+			fakeFlyCommand.GetPipelineReturns(nil, fmt.Errorf("error: pipeline not found"))
+		})
+
+		It("catches the error", func() {
+			_, err := command.Run(checkRequest)
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
 
