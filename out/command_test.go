@@ -57,10 +57,10 @@ var _ = Describe("Out", func() {
 		teamName = "main"
 		otherTeamName = "some-other-team"
 
-		apiPipelines = []string{"pipeline-1", "pipeline-2", "pipeline-3"}
+		apiPipelines = []string{"pipeline-1", "pipeline-2", "pipeline-3", "pipeline-4"}
 		setPipelinesErr = nil
 
-		pipelineContents = make([]string, 3)
+		pipelineContents = make([]string, 4)
 
 		pipelineContents[0] = `---
 pipeline1: foo
@@ -72,6 +72,10 @@ pipeline2: foo
 
 		pipelineContents[2] = `---
 pipeline3: foo
+`
+
+		pipelineContents[3] = `---
+pipeline4: foo
 `
 
 		pipelines = []concourse.Pipeline{
@@ -99,6 +103,12 @@ pipeline3: foo
 					"launch-missiles": true,
 				},
 			},
+			{
+				Name:       apiPipelines[3],
+				ConfigFile: "pipeline43.yml",
+				TeamName:   otherTeamName,
+				HideStdout: true,
+			},
 		}
 
 		fakeFlyCommand.GetPipelineStub = func(name string) ([]byte, error) {
@@ -112,6 +122,8 @@ pipeline3: foo
 				return []byte(pipelineContents[1]), nil
 			case apiPipelines[2]:
 				return []byte(pipelineContents[2]), nil
+			case apiPipelines[3]:
+				return []byte(pipelineContents[3]), nil
 			default:
 				Fail("Unexpected invocation of flyCommand.GetPipeline")
 				return nil, nil
@@ -203,6 +215,12 @@ pipeline3: foo
 			if i == 2 {
 				Expect(vars).ToNot(BeNil())
 				Expect(vars["launch-missiles"]).To(BeTrue())
+				Expect(p.HideStdout).To(BeFalse())
+			}
+
+			// the fourth pipeline as hide_stdout: true
+			if i == 3 {
+				Expect(p.HideStdout).To(BeTrue())
 			}
 		}
 	})
@@ -232,7 +250,7 @@ pipeline3: foo
 			_, err := command.Run(outRequest)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeFlyCommand.LoginCallCount()).To(Equal(5))
+			Expect(fakeFlyCommand.LoginCallCount()).To(Equal(6))
 			_, _, _, _, insecure := fakeFlyCommand.LoginArgsForCall(0)
 
 			Expect(insecure).To(BeTrue())

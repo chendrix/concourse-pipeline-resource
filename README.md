@@ -149,6 +149,10 @@ Must be non-nil and non-empty. The structure of the `pipeline` object is as foll
  be exposed after the creation. If it is set to `true`, the command
  `expose-pipeline` will be executed for the specific pipeline.
 
+ - `hide_stdout`: *Optional.* Boolean specifying if the pipeline should
+ hide the fly output showing changes in the pipeline. If it is set to `true`, 
+ the command will not output the fly pipeline changes.
+
 ### dynamic
 
 Resource configuration as above for Check, with the following job configuration:
